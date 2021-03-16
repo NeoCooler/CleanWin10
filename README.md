@@ -1,5 +1,4 @@
-CleanWin10
- Clean/Configuration Win10
+Clean/Configuration Win10
  
 ## Functions liste:
 
