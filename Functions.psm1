@@ -50,7 +50,6 @@ Function DisableTelemetry {
 	Disable-ScheduledTask -TaskName "Microsoft\Windows\Customer Experience Improvement Program\Consolidator" | Out-Null
 	Disable-ScheduledTask -TaskName "Microsoft\Windows\Customer Experience Improvement Program\UsbCeip" | Out-Null
 	Disable-ScheduledTask -TaskName "Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector" | Out-Null
-	# Office 2016 / 2019
 	Disable-ScheduledTask -TaskName "Microsoft\Office\Office ClickToRun Service Monitor" -ErrorAction SilentlyContinue | Out-Null
 	Disable-ScheduledTask -TaskName "Microsoft\Office\OfficeTelemetryAgentFallBack2016" -ErrorAction SilentlyContinue | Out-Null
 	Disable-ScheduledTask -TaskName "Microsoft\Office\OfficeTelemetryAgentLogOn2016" -ErrorAction SilentlyContinue | Out-Null
@@ -76,7 +75,6 @@ Function EnableTelemetry {
 	Enable-ScheduledTask -TaskName "Microsoft\Windows\Customer Experience Improvement Program\Consolidator" | Out-Null
 	Enable-ScheduledTask -TaskName "Microsoft\Windows\Customer Experience Improvement Program\UsbCeip" | Out-Null
 	Enable-ScheduledTask -TaskName "Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector" | Out-Null
-	# Office 2016 / 2019
 	Enable-ScheduledTask -TaskName "Microsoft\Office\Office ClickToRun Service Monitor" -ErrorAction SilentlyContinue | Out-Null
 	Enable-ScheduledTask -TaskName "Microsoft\Office\OfficeTelemetryAgentFallBack2016" -ErrorAction SilentlyContinue | Out-Null
 	Enable-ScheduledTask -TaskName "Microsoft\Office\OfficeTelemetryAgentLogOn2016" -ErrorAction SilentlyContinue | Out-Null
@@ -217,7 +215,6 @@ Function DisableAppSuggestions {
 		New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\WindowsInkWorkspace" -Force | Out-Null
 	}
 	Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\WindowsInkWorkspace" -Name "AllowSuggestedAppsInWindowsInkWorkspace" -Type DWord -Value 0
-	# Empty placeholder tile collection in registry cache and restart Start Menu process to reload the cache
 	If ([System.Environment]::OSVersion.Version.Build -ge 17134) {
 		$key = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\CloudStore\Store\Cache\DefaultAccount\*windows.data.placeholdertilecollection\Current"
 		Set-ItemProperty -Path $key.PSPath -Name "Data" -Type Binary -Value $key.Data[0..15]
@@ -248,7 +245,6 @@ Function EnableAppSuggestions {
 }
 
 # Disable Activity History feed in Task View
-# Note: The checkbox "Let Windows collect my activities from this PC" remains checked even when the function is disabled
 Function DisableActivityHistory {
 	Write-Output "Disabling Activity History..."
 	Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System" -Name "EnableActivityFeed" -Type DWord -Value 0
@@ -566,10 +562,6 @@ Function EnableRecentFiles {
 #region UWP Privacy Tweaks
 ##########
 # Universal Windows Platform (UWP) is an API for common application and device controls unified for all devices capable of running Windows 10.
-# UWP applications are running sandboxed and the user can control devices and capabilities available to them.
-
-# Disable UWP apps background access - ie. if UWP apps can download data or update themselves when they aren't used
-# Until 1809, Cortana and ShellExperienceHost need to be explicitly excluded as their inclusion breaks start menu search and toast notifications respectively.
 Function DisableUWPBackgroundApps {
 	Write-Output "Disabling UWP apps background access..."
 	If ([System.Environment]::OSVersion.Version.Build -ge 17763) {
@@ -811,7 +803,6 @@ Function EnableUWPFileSystem {
 }
 
 # Disable UWP apps swap file
-# This disables creation and use of swapfile.sys and frees 256 MB of disk space. Swapfile.sys is used only by UWP apps. The tweak has no effect on the real swap in pagefile.sys.
 Function DisableUWPSwapFile {
 	Write-Output "Disabling UWP apps swap file..."
 	Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name "SwapfileControl" -Type Dword -Value 0
@@ -972,8 +963,6 @@ Function DisableCtrldFolderAccess {
 }
 
 # Enable Core Isolation Memory Integrity - Part of Windows Defender System Guard virtualization-based security - Applicable since 1803
-# Warning: This may cause old applications and drivers to crash or even cause BSOD
-# Problems were confirmed with old video drivers (Intel HD Graphics for 2nd gen., Radeon HD 6850), and old antivirus software (Kaspersky Endpoint Security 10.2, 11.2)
 Function EnableCIMemoryIntegrity {
 	Write-Output "Enabling Core Isolation Memory Integrity..."
 	If (!(Test-Path "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity")) {
@@ -989,7 +978,6 @@ Function DisableCIMemoryIntegrity {
 }
 
 # Enable Windows Defender Application Guard - Applicable since 1709 Enterprise and 1803 Pro. Not applicable to Server
-# Not supported on VMs and VDI environment. Check requirements on https://docs.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-guard/reqs-wd-app-guard
 Function EnableDefenderAppGuard {
 	Write-Output "Enabling Windows Defender Application Guard..."
 	Enable-WindowsOptionalFeature -online -FeatureName "Windows-Defender-ApplicationGuard" -NoRestart -WarningAction SilentlyContinue | Out-Null
@@ -1044,7 +1032,6 @@ Function EnableScriptHost {
 }
 
 # Enable strong cryptography for old versions of .NET Framework (4.6 and newer have strong crypto enabled by default)
-# https://docs.microsoft.com/en-us/dotnet/framework/network-programming/tls#schusestrongcrypto
 Function EnableDotNetStrongCrypto {
 	Write-output "Enabling .NET strong cryptography..."
 	Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -Name "SchUseStrongCrypto" -Type DWord -Value 1
@@ -1059,10 +1046,6 @@ Function DisableDotNetStrongCrypto {
 }
 
 # Enable Meltdown (CVE-2017-5754) compatibility flag - Required for January and February 2018 Windows updates
-# This flag is normally automatically enabled by compatible antivirus software (such as Windows Defender).
-# Use the tweak only if you have confirmed that your AV is compatible but unable to set the flag automatically or if you don't use any AV at all.
-# As of March 2018, the compatibility check has been lifted for security updates.
-# See https://support.microsoft.com/en-us/help/4072699/windows-security-updates-and-antivirus-software for details
 Function EnableMeltdownCompatFlag {
 	Write-Output "Enabling Meltdown (CVE-2017-5754) compatibility flag..."
 	If (!(Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\QualityCompat")) {
@@ -1090,22 +1073,18 @@ Function DisableF8BootMenu {
 }
 
 # Disable automatic recovery mode during boot
-# This causes boot process to always ignore startup errors and attempt to boot normally
-# It is still possible to interrupt the boot and enter recovery mode manually. In order to disable even that, apply also DisableRecoveryAndReset tweak
 Function DisableBootRecovery {
 	Write-Output "Disabling automatic recovery mode during boot..."
 	bcdedit /set `{current`} BootStatusPolicy IgnoreAllFailures | Out-Null
 }
 
 # Enable automatic entering recovery mode during boot
-# This allows the boot process to automatically enter recovery mode when it detects startup errors (default behavior)
 Function EnableBootRecovery {
 	Write-Output "Enabling automatic recovery mode during boot..."
 	bcdedit /deletevalue `{current`} BootStatusPolicy | Out-Null
 }
 
 # Disable System Recovery and Factory reset
-# Warning: This tweak completely removes the option to enter the system recovery during boot and the possibility to perform a factory reset
 Function DisableRecoveryAndReset {
 	Write-Output "Disabling System Recovery and Factory reset..."
 	reagentc /disable 2>&1 | Out-Null
@@ -1215,7 +1194,6 @@ Function EnableSMB1 {
 }
 
 # Disable SMB Server - Completely disables file and printer sharing, but leaves the system able to connect to another SMB server as a client
-# Note: Do not run this if you plan to use Docker and Shared Drives (as it uses SMB internally), see https://github.com/Disassembler0/Win10-Initial-Setup-Script/issues/216
 Function DisableSMBServer {
 	Write-Output "Disabling SMB Server..."
 	Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force
@@ -1332,8 +1310,6 @@ Function EnableIPv6 {
 }
 
 # Disable Network Connectivity Status Indicator active test
-# Note: This may reduce the ability of OS and other components to determine internet access, however protects against a specific type of zero-click attack.
-# See https://github.com/Disassembler0/Win10-Initial-Setup-Script/pull/111 for details
 Function DisableNCSIProbe {
 	Write-Output "Disabling Network Connectivity Status Indicator (NCSI) active test..."
 	Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\NetworkConnectivityStatusIndicator" -Name "NoActiveProbe" -Type DWord -Value 1
@@ -1411,8 +1387,6 @@ Function EnableUpdateMSRT {
 }
 
 # Disable offering of drivers through Windows Update
-# Note: This doesn't work properly if you use a driver intended for another hardware model. E.g. Intel I219-V on WinServer works only with I219-LM driver.
-# Therefore Windows update will repeatedly try and fail to install I219-V driver indefinitely even if you use the tweak.
 Function DisableUpdateDriver {
 	Write-Output "Disabling driver offering through Windows Update..."
 	If (!(Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Device Metadata")) {
@@ -1467,8 +1441,6 @@ Function EnableUpdateAutoDownload {
 }
 
 # Disable automatic restart after Windows Update installation
-# The tweak is slightly experimental, as it registers a dummy debugger for MusNotification.exe
-# which blocks the restart prompt executable from running, thus never schedulling the restart
 Function DisableUpdateRestart {
 	Write-Output "Disabling Windows Update automatic restart..."
 	If (!(Test-Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MusNotification.exe")) {
@@ -1501,7 +1473,6 @@ Function EnableMaintenanceWakeUp {
 }
 
 # Disable Automatic Restart Sign-on - Applicable since 1903
-# See https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/manage/component-updates/winlogon-automatic-restart-sign-on--arso-
 Function DisableAutoRestartSignOn {
 	Write-Output "Disabling Automatic Restart Sign-on..."
 	Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "DisableAutomaticRestartSignOn" -Type DWord -Value 1
@@ -1514,7 +1485,6 @@ Function EnableAutoRestartSignOn {
 }
 
 # Disable Shared Experiences - Applicable since 1703. Not applicable to Server
-# This setting can be set also via GPO, however doing so causes reset of Start Menu cache. See https://github.com/Disassembler0/Win10-Initial-Setup-Script/issues/145 for details
 Function DisableSharedExperiences {
 	Write-Output "Disabling Shared Experiences..."
 	If (!(Test-Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\CDP")) {
@@ -1569,16 +1539,12 @@ Function EnableAutorun {
 }
 
 # Disable System Restore for system drive - Not applicable to Server
-# Note: This does not delete already existing restore points as the deletion of restore points is irreversible. In order to do that, run also following command.
-# vssadmin Delete Shadows /For=$env:SYSTEMDRIVE /Quiet
 Function DisableRestorePoints {
 	Write-Output "Disabling System Restore for system drive..."
 	Disable-ComputerRestore -Drive "$env:SYSTEMDRIVE"
 }
 
 # Enable System Restore for system drive - Not applicable to Server
-# Note: Some systems (notably VMs) have maximum size allowed to be used for shadow copies set to zero. In order to increase the size, run following command.
-# vssadmin Resize ShadowStorage /On=$env:SYSTEMDRIVE /For=$env:SYSTEMDRIVE /MaxSize=10GB
 Function EnableRestorePoints {
 	Write-Output "Enabling System Restore for system drive..."
 	Enable-ComputerRestore -Drive "$env:SYSTEMDRIVE"
@@ -1914,7 +1880,6 @@ Function EnableAccessibilityKeys {
 }
 
 # Show Task Manager details - Applicable since 1607
-# Although this functionality exist even in earlier versions, the Task Manager's behavior is different there and is not compatible with this tweak
 Function ShowTaskManagerDetails {
 	Write-Output "Showing task manager details..."
 	$taskmgr = Start-Process -WindowStyle Hidden -FilePath taskmgr.exe -PassThru
@@ -3331,12 +3296,6 @@ Function InstallMsftBloat {
 	Get-AppxPackage -AllUsers "Microsoft.ZuneMusic" | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml"}
 	Get-AppxPackage -AllUsers "Microsoft.ZuneVideo" | ForEach-Object {Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml"}
 }
-# In case you have removed them for good, you can try to restore the files using installation medium as follows
-# New-Item C:\Mnt -Type Directory | Out-Null
-# dism /Mount-Image /ImageFile:D:\sources\install.wim /index:1 /ReadOnly /MountDir:C:\Mnt
-# robocopy /S /SEC /R:0 "C:\Mnt\Program Files\WindowsApps" "C:\Program Files\WindowsApps"
-# dism /Unmount-Image /Discard /MountDir:C:\Mnt
-# Remove-Item -Path C:\Mnt -Recurse
 
 # Uninstall default third party applications
 function UninstallThirdPartyBloat {
@@ -3698,8 +3657,6 @@ Function InstallMathRecognizer {
 }
 
 # Uninstall PowerShell 2.0 Environment
-# PowerShell 2.0 is deprecated since September 2018. This doesn't affect PowerShell 5 or newer which is the default PowerShell environment.
-# May affect Microsoft Diagnostic Tool and possibly other scripts. See https://blogs.msdn.microsoft.com/powershell/2017/08/24/windows-powershell-2-0-deprecation/
 Function UninstallPowerShellV2 {
 	Write-Output "Uninstalling PowerShell 2.0 Environment..."
 	If ((Get-CimInstance -Class "Win32_OperatingSystem").ProductType -eq 1) {
@@ -3720,7 +3677,6 @@ Function InstallPowerShellV2 {
 }
 
 # Uninstall PowerShell Integrated Scripting Environment - Applicable since 2004
-# Note: Also removes built-in graphical methods like Out-GridView
 Function UninstallPowerShellISE {
 	Write-Output "Uninstalling PowerShell Integrated Scripting Environment..."
 	Get-WindowsCapability -Online | Where-Object { $_.Name -like "Microsoft.Windows.PowerShell.ISE*" } | Remove-WindowsCapability -Online | Out-Null
@@ -3733,8 +3689,6 @@ Function InstallPowerShellISE {
 }
 
 # Install Linux Subsystem - Applicable since Win10 1607 and Server 1709
-# Note: 1607 requires also EnableDevelopmentMode for WSL to work
-# For automated Linux distribution installation, see https://docs.microsoft.com/en-us/windows/wsl/install-on-server
 Function InstallLinuxSubsystem {
 	Write-Output "Installing Linux Subsystem..."
 	Get-WindowsOptionalFeature -Online | Where-Object { $_.FeatureName -eq "Microsoft-Windows-Subsystem-Linux" } | Enable-WindowsOptionalFeature -Online -NoRestart -WarningAction SilentlyContinue | Out-Null
@@ -4042,7 +3996,6 @@ Function DisableAudio {
 ##########
 
 # Unpin all Start Menu tiles
-# Note: This function has no counterpart. You have to pin the tiles back manually.
 Function UnpinStartMenuTiles {
 	Write-Output "Unpinning all Start Menu tiles..."
 	If ([System.Environment]::OSVersion.Version.Build -ge 15063 -And [System.Environment]::OSVersion.Version.Build -le 16299) {
@@ -4060,7 +4013,6 @@ Function UnpinStartMenuTiles {
 }
 
 # Unpin all Taskbar icons
-# Note: This function has no counterpart. You have to pin the icons back manually.
 Function UnpinTaskbarIcons {
 	Write-Output "Unpinning all Taskbar icons..."
 	Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" -Name "Favorites" -Type Binary -Value ([byte[]](255))
