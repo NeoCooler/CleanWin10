@@ -1,7 +1,7 @@
 CleanWin10
  Clean/Configuration Win10
  
- Functions liste:
+## Functions liste:
 
 RequireAdmin
 
@@ -689,3 +689,5 @@ UnpinTaskbarIcons
 
 WaitForKey
 Restart
+
+&nbsp;
